@@ -167,3 +167,49 @@ kubernetes支持多种类型的volume，并且一个pod可以同时使用多个v
 使不同的分组在共享使用整个集群的资源时还能被分别管理
 ### Annotation
 是用户定义的附加信息，便于外部工具查找
+
+## 宏观的看看
+### 发展
+> 由来
+
+kubernetes是一个全新的基于容器技术的分布式架构领先方案，但实际上它是google几十年来大规模应用容器技术的经验积累。
+**Borg** 的一个开源版本。kubernetes提供的解决方案和强大的自动化机制，使得系统后期的运维难度和运维成本大幅度降低。
+kubernetes没有语言限制，通过标准的TCP通信协议进行交互。
+这是一个完备的分布式系统支撑平台，具有完备的集群管理能力，包括多层次的安全防护和准入机制，多租户应用支撑能力，透明的服务注册和服务发现机制，内建智能负载均衡器，强大的故障发现和自我修复能力、服务滚动升级和在线扩容能力、可扩展的资源自动调度机制，以及多粒度的资源配额管理能力。
+同时还提供了完善的管理工具，包括开发，部署，测试，运维监控。
+所以是一个一站式的完备的分布式系统开发和支撑平台。
+
+> 核心
+
+service是分布式集群机构的核心，service的服务进程目前都基于Socket通信方式对位提供服务，如Redis,Memacache,MySQL,Web Server,或者是实现了某一个具体业务的一个特定TCP Server服务。
+一个服务一旦创建就不再变化，只要通过这个固定的虚拟ip就可以访问到。
+每一个pod里运行着一个称为pause的容器，其他称为业务容器，这些容器共享pause容器的网络栈和volume挂载卷，彼此之间通信和数据交换更为高效。
+只有那些提供服务的一组pod才被映射一个服务。
+
+> 服务扩容和系统升级
+
+服务扩容涉及资源分配(选择哪个节点进行扩容)、实例部署和启动，在kubernetes中，只需要为扩容的service关联的pod创建一个ReplicationController，则该service的扩容以至于后来的service升级等问题得到解决。
+一个rc的定义文件包括：pod的定义、pod需要运行的副本数量(Eplicas)、要监控的目标pod的label。
+service升级也通过修改rc来自动完成。
+
+> 微服务
+
+微服务架构的核心是将一个巨大的单体应用分解为很多小的互相连接的微服务，一个微服务后面可能有多个实例副本在支撑，副本的数量可能会随着系统的负荷变化而进行调整，内嵌的负载均衡起了很大作用。
+每个微服务独立开发、升级、扩展，系统具有很高的稳定性和快速迭代进化能力。
+kubernetes架构具备超强的横向扩容能力。
+
+## 使用
+### 起一个本地集群
+首先cd进本地的kubernetes文件夹
+然后执行
+```
+hack/local-up-cluster.sh    
+```
+接着新开一个terminal，然后设置如下
+```
+export KUBERNETES_PROVIDER=local
+cluster/kubectl.sh config set-cluster local --server=http://127.0.0.1:8080 --insecure-skip-tls-verify=true
+cluster/kubectl.sh config set-context local --cluster=local
+cluster/kubectl.sh config use-context local
+```
+这样就可以开始用kubectl来管理查看这个集群了。
